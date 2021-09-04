@@ -1,0 +1,7 @@
+  
+.TitleLogo {
+  display: flex;
+  flex-direction: row;
+  align-items: right;
+  justify-content: flex-end;  
+}
