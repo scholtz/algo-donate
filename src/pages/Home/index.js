@@ -200,6 +200,16 @@ export default class Home extends Component {
               PipelineUI
             </a>
           </Text>
+          <Text>
+            Source code -{" "}
+            <a
+              rel="noreferrer"
+              target="_blank"
+              href="https://github.com/scholtz/algo-donate"
+            >
+              https://github.com/scholtz/algo-donate
+            </a>
+          </Text>
         </Card>
         {this.state.selection &&
           this.state.selection.id &&
