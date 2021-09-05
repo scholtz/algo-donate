@@ -3,14 +3,7 @@ import Header from "./components/Header";
 import Home from "./pages/Home";
 import Fund from "./pages/Fund";
 
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Link,
-  useRouteMatch,
-  useParams,
-} from "react-router-dom";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import "./App.css";
 
 export default function App() {

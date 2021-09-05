@@ -109,13 +109,13 @@ export default function Home() {
     const url = state.url.startsWith("https://")
       ? state.url
       : "https://" + state.url;
-    if (url == "https://") return "";
+    if (url === "https://") return "";
     return (
       "donation/v1:j" +
       JSON.stringify({
         title: state.title,
         reason: state.reason,
-        amount: state.amount,
+        amount: state.amount * 1000000,
         asset: state.asset,
         url,
         duration: state.wait,

@@ -4,9 +4,8 @@ import { Link, Link as PipeLink } from "react-router-dom";
 import { Pipeline } from "pipeline-ui";
 import algosdk from "algosdk";
 
-const myAlgoWallet = Pipeline.init();
-Pipeline.main = false;
-var mynet = Pipeline.main ? "MainNet" : "TestNet";
+//const myAlgoWallet = Pipeline.init();
+Pipeline.main = true;
 
 export default class Home extends Component {
   constructor(props) {
@@ -40,7 +39,6 @@ export default class Home extends Component {
         selection: {},
       };
     }
-    const that = this;
   }
 
   async componentDidMount() {
@@ -76,9 +74,11 @@ export default class Home extends Component {
     if (!txs.transactions) return [];
     for (const index in txs.transactions) {
       const tx = txs.transactions[index];
+      console.log("tx", tx);
       const row = {};
       row.id = tx.id;
       row["round-time"] = tx["round-time"];
+      row["round"] = tx["confirmed-round"];
       row["sender"] = tx["sender"];
       const search = "donation/v1:j";
       let note = "";
@@ -109,7 +109,7 @@ export default class Home extends Component {
       return false;
     }
     try {
-      return btoa(atob(str)) == str;
+      return btoa(atob(str)) === str;
     } catch (err) {
       return false;
     }
@@ -157,15 +157,15 @@ export default class Home extends Component {
     });
   };
   getAssetName(asset) {
-    if (asset == "ALGO") return "Algo";
-    if (asset == "312769") return "Tether - USDt";
+    if (asset === "ALGO") return "Algo";
+    if (asset === "312769") return "Tether - USDt";
     return "ID: " + asset;
   }
   makeQR() {
     let asset = "";
     if (
       this.state.selection.note.asset &&
-      this.state.selection.note.asset != "ALGO"
+      this.state.selection.note.asset !== "ALGO"
     ) {
       asset = "asset=" + this.state.selection.note.asset + "&";
     }
@@ -205,28 +205,91 @@ export default class Home extends Component {
           this.state.selection.id &&
           this.state.selection.note && (
             <Card>
-              <div>ID: {this.state.selection.id}</div>
-              <div>Project: {this.state.selection.note.title}</div>
-              <div>
-                Funding reason: <pre>{this.state.selection.note.reason}</pre>
-              </div>
-              <div>Project URL: {this.state.selection.note.url}</div>
-              <p>
-                Always verify if the information provided in the project address
-                is the same as shown here. Anyone can publish the donation
-                requests, and the project developer is responsible to list his
-                donation account address on his website.
-              </p>
-              <div>Account to fund: {this.state.selection.sender}</div>
-              <div>
-                Amount: {this.state.selection.note.amount}{" "}
-                {this.getAssetName(this.state.selection.note.asset)}
-              </div>
-              <div>Asset code: {this.state.selection.note.asset}</div>
-              <div>QR text: {this.makeQR()}</div>
-              <div>
-                <QR value={this.makeQR()} size={200} />
-              </div>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>ID:</th>
+                    <td>{this.state.selection.id}</td>
+                  </tr>
+                  <tr>
+                    <th>Requested at block:</th>
+                    <td>{this.state.selection["round"]}</td>
+                  </tr>
+                  <tr>
+                    <th>Request is open until block:</th>
+                    <td>
+                      {this.state.selection["round"] +
+                        this.state.selection.note["duration"]}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Current block:</th>
+                    <td>{this.state.params.firstRound}</td>
+                  </tr>
+                  <tr>
+                    <th>Number of blocks until closed::</th>
+                    <td>
+                      {this.state.selection["round"] +
+                        this.state.selection.note["duration"] -
+                        this.state.params.firstRound}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Project</th>
+                    <td>{this.state.selection.note.title}</td>
+                  </tr>
+                  <tr>
+                    <th>Funding reason</th>
+                    <td>
+                      <pre>{this.state.selection.note.reason}</pre>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Project URL</th>
+                    <td>
+                      {this.state.selection.note.url}
+                      <p>
+                        Always verify if the information provided in the project
+                        address is the same as shown here. Anyone can publish
+                        the donation requests, and the project developer is
+                        responsible to list his donation account address on his
+                        website.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Account to fund:</th>
+                    <td>{this.state.selection.sender}</td>
+                  </tr>
+                  <tr>
+                    <th>Amount:</th>
+                    <td>
+                      {this.state.selection.note.amount / 1000000}
+                      {this.getAssetName(this.state.selection.note.asset)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Asset code:</th>
+                    <td>{this.state.selection.note.asset}</td>
+                  </tr>
+                  <tr>
+                    <th>QR text:</th>
+                    <td>{this.makeQR()}</td>
+                  </tr>
+                  <tr>
+                    <th>Please donate:</th>
+                    <td>
+                      <QR value={this.makeQR()} size={200} />
+                    </td>
+                  </tr>
+                </tbody>
+              </Table>
             </Card>
           )}
         {this.state.loading && (
@@ -243,6 +306,7 @@ export default class Home extends Component {
               <thead>
                 <tr>
                   <th>Project</th>
+                  <th>Request</th>
                   <th>Transaction ID</th>
                   <th>Time</th>
                 </tr>
@@ -252,6 +316,10 @@ export default class Home extends Component {
                   <tr>
                     <td>{row.note["title"]}</td>
                     <td>{row["id"]}</td>
+                    <td>
+                      {row.note["amount"] / 1000000} &nbsp;
+                      {this.getAssetName(row.note["asset"])}
+                    </td>
                     <td>{row["round-time"]}</td>
                     <td>
                       <Button m={3} onClick={() => this.onSelectionChange(row)}>
