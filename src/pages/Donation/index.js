@@ -1,5 +1,5 @@
-import React, { Component } from "react";
-import { Card, Heading, Text, Table, Loader, Button, QR } from "pipeline-ui";
+import React from "react";
+import { Card, Heading, Text, Table, Loader } from "pipeline-ui";
 import { Link, Link as PipeLink } from "react-router-dom";
 import { Pipeline } from "pipeline-ui";
 import algosdk from "algosdk";
@@ -8,10 +8,10 @@ const myAlgoWallet = Pipeline.init();
 Pipeline.main = false;
 var mynet = Pipeline.main ? "MainNet" : "TestNet";
 
-export default class Home extends Component {
+export default class Home extends React.Component {
   constructor(props) {
     super(props);
-    console.log("constructor this.props", this.props);
+    console.log(this.props);
 
     if (Pipeline.main) {
       this.state = {
@@ -24,7 +24,6 @@ export default class Home extends Component {
         txs: [],
         params: { firstRound: 0 },
         loading: true,
-        selection: {},
       };
     } else {
       this.state = {
@@ -37,7 +36,6 @@ export default class Home extends Component {
         txs: [],
         params: { firstRound: 0 },
         loading: true,
-        selection: {},
       };
     }
     const that = this;
@@ -56,8 +54,6 @@ export default class Home extends Component {
       newState.txs = this.parseTransactions(txs);
       newState.params = params;
       newState.loading = false;
-      console.log("newState", newState);
-      console.log("this.props", this.props);
       await this.setState(newState);
       console.log("state", this.state);
     } catch (err) {}
@@ -79,7 +75,6 @@ export default class Home extends Component {
       const row = {};
       row.id = tx.id;
       row["round-time"] = tx["round-time"];
-      row["sender"] = tx["sender"];
       const search = "donation/v1:j";
       let note = "";
       if (this.isBase64(tx.note)) {
@@ -149,37 +144,6 @@ export default class Home extends Component {
       console.log("error", error, note);
     }
   };
-  onSelectionChange = (row) => {
-    this.setState((prevState) => {
-      const newState = { ...prevState };
-      newState.selection = row;
-      return newState;
-    });
-  };
-  getAssetName(asset) {
-    if (asset == "ALGO") return "Algo";
-    if (asset == "312769") return "Tether - USDt";
-    return "ID: " + asset;
-  }
-  makeQR() {
-    let asset = "";
-    if (
-      this.state.selection.note.asset &&
-      this.state.selection.note.asset != "ALGO"
-    ) {
-      asset = "asset=" + this.state.selection.note.asset + "&";
-    }
-    return (
-      "algorand://" +
-      this.state.selection.sender +
-      "?" +
-      asset +
-      "amount=" +
-      this.state.selection.note.amount +
-      "&note=donation-to/v1:j" +
-      JSON.stringify({ id: this.state.selection.id })
-    );
-  }
   render() {
     return (
       <div>
@@ -201,34 +165,6 @@ export default class Home extends Component {
             </a>
           </Text>
         </Card>
-        {this.state.selection &&
-          this.state.selection.id &&
-          this.state.selection.note && (
-            <Card>
-              <div>ID: {this.state.selection.id}</div>
-              <div>Project: {this.state.selection.note.title}</div>
-              <div>
-                Funding reason: <pre>{this.state.selection.note.reason}</pre>
-              </div>
-              <div>Project URL: {this.state.selection.note.url}</div>
-              <p>
-                Always verify if the information provided in the project address
-                is the same as shown here. Anyone can publish the donation
-                requests, and the project developer is responsible to list his
-                donation account address on his website.
-              </p>
-              <div>Account to fund: {this.state.selection.sender}</div>
-              <div>
-                Amount: {this.state.selection.note.amount}{" "}
-                {this.getAssetName(this.state.selection.note.asset)}
-              </div>
-              <div>Asset code: {this.state.selection.note.asset}</div>
-              <div>QR text: {this.makeQR()}</div>
-              <div>
-                <QR value={this.makeQR()} size={200} />
-              </div>
-            </Card>
-          )}
         {this.state.loading && (
           <Card>
             <Loader color="primary" size="80px" />
@@ -253,11 +189,6 @@ export default class Home extends Component {
                     <td>{row.note["title"]}</td>
                     <td>{row["id"]}</td>
                     <td>{row["round-time"]}</td>
-                    <td>
-                      <Button m={3} onClick={() => this.onSelectionChange(row)}>
-                        Show
-                      </Button>
-                    </td>
                   </tr>
                 ))}
               </tbody>

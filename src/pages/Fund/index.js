@@ -18,6 +18,7 @@ export default function Home() {
     reason: "",
     code: "",
     qr: "",
+    title: "",
     asset: "ALGO",
     url: "",
     account: "",
@@ -42,6 +43,16 @@ export default function Home() {
     setState((prevState) => {
       const newState = { ...prevState };
       newState.url = e.target.value;
+      newState.code = makeNote(newState);
+      newState.qr = makeQR(newState);
+      newState.showPayment = !!newState.code;
+      return newState;
+    });
+  };
+  const onTitleChange = (e) => {
+    setState((prevState) => {
+      const newState = { ...prevState };
+      newState.title = e.target.value;
       newState.code = makeNote(newState);
       newState.qr = makeQR(newState);
       newState.showPayment = !!newState.code;
@@ -93,16 +104,20 @@ export default function Home() {
     if (state.amount <= 0) {
       return "";
     }
+    if (!state.title) return "";
     if (!state.reason) return "";
+    const url = state.url.startsWith("https://")
+      ? state.url
+      : "https://" + state.url;
+    if (url == "https://") return "";
     return (
       "donation/v1:j" +
       JSON.stringify({
+        title: state.title,
         reason: state.reason,
         amount: state.amount,
         asset: state.asset,
-        url: state.url.startsWith("https://")
-          ? state.url
-          : "https://" + state.url,
+        url,
         duration: state.wait,
       })
     );
@@ -134,6 +149,18 @@ export default function Home() {
           scan QR code in your wallet application, and your request will be
           published to whole world.
         </Text>
+        <Box>
+          <h2>Title of the project - shows in the table</h2>
+          <Input
+            required={true}
+            placeholder="Short project title"
+            maxlength="50"
+            value={state.title}
+            onChange={onTitleChange}
+            rows="10"
+            style={{ width: "100%" }}
+          />
+        </Box>
         <Box>
           <h2>Why do you need funds?</h2>
           <Textarea
@@ -186,6 +213,15 @@ export default function Home() {
           />
         </Box>
         <Box>
+          <h2>What do you want to receive?</h2>
+          <Select
+            options={AsaList}
+            onChange={onAssetChange}
+            defaultValue={{ label: "Algorand", value: state.asset }}
+            style={{ "max-width": "100px" }}
+          />
+        </Box>
+        <Box>
           <h2>How much do you need?</h2>
           <Input
             type="number"
@@ -196,12 +232,7 @@ export default function Home() {
             step="1"
             value={state.amount}
             onChange={onAmountChange}
-          />
-          <Select
-            options={AsaList}
-            onChange={onAssetChange}
-            defaultValue={{ label: "Algorand", value: state.asset }}
-            style={{ "max-width": "100px" }}
+            style={{ width: "100%" }}
           />
         </Box>
         {state.showPayment && (

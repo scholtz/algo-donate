@@ -27,6 +27,9 @@ export default function App() {
         <Route path="/donate">
           <Home />
         </Route>
+        <Route path="/donation/:id">
+          <Home />
+        </Route>
       </Switch>
     </Router>
   );
