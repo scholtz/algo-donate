@@ -2,13 +2,55 @@ import React from "react";
 import { Card, Heading, Text, Table } from "pipeline-ui";
 import { Link, Link as PipeLink } from "react-router-dom";
 import { Pipeline } from "pipeline-ui";
+import algosdk from "algosdk";
 
 const myAlgoWallet = Pipeline.init();
-Pipeline.main = true;
+Pipeline.main = false;
 var mynet = Pipeline.main ? "MainNet" : "TestNet";
 
-export default function Home() {
-  const fetchBalance = () => {
+export default class Home extends React.Component  {
+  constructor(props) {
+    super(props);
+    console.log(this.props);
+
+
+    if(Pipeline.main){
+      this.state = {
+        algod:"https://algoexplorerapi.io",
+        algodToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        indexer:"https://algoexplorerapi.io/idx2",
+        indexerToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        txs:{transactions:[]},
+        params:{firstRound:0}
+      }
+      }else{
+        this.state = {
+          algod:"http://localhost:4001",
+          algodToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          indexer:"http://localhost:8980",
+          indexerToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          txs:{transactions:[]},
+          params:{firstRound:0}
+        }
+      }
+      const that = this;
+      
+      
+    }
+   
+    async componentDidMount() {  
+      try {
+        const params = await this.getTransactionParams();
+        var from = Math.max(1,params.firstRound - 100000)
+        const txs = await this.searchForTransactionsWithNoteAndAmount({note:"donation/v1", amount: 800, min: from});  // it will wait here untill function a finishes
+        const newState = {...this.state}
+        newState.txs = txs
+        newState.params = params
+        await this.setState(newState);
+        console.log("state",this.state)
+      } catch(err) {}
+  }
+  fetchBalance = () => {
     Pipeline.balance(
       "P65LXHA5MEDMOJ2ZAITLZWYSU6W25BF2FCXJ5KQRDUB2NT2T7DPAAFYT3U"
     ).then((data) => {
@@ -16,6 +58,45 @@ export default function Home() {
       //this.setState({ balance: data });
     });
   };
+
+  async getTransactionParams() {
+    try {
+      const url = new URL(this.state.algod);
+      let algodclient = new algosdk.Algodv2(
+        this.state.algodToken,
+        this.state.algod,
+        url.port
+      );
+      return await algodclient.getTransactionParams().do();
+    } catch (error) {
+      console.log("error", error);
+    }
+  }
+  searchForTransactionsWithNoteAndAmount = async (
+    { note, amount, min }
+  ) => {
+    try {
+      const url = new URL(this.state.indexer);
+      const indexerClient = new algosdk.Indexer(
+        this.state.indexerToken,
+        this.state.indexer,
+        url.port
+      );
+      const enc = new TextEncoder();
+      const noteenc = enc.encode(note);
+      const searchForTransactions = await indexerClient
+        .searchForTransactions()
+        .currencyGreaterThan(amount - 1)
+        .currencyLessThan(amount + 1)
+        .minRound(Math.max(min, 0))
+        .notePrefix(noteenc)
+        .do();
+      return searchForTransactions;
+    } catch (error) {
+      console.log("error", error, note);
+    }
+  }
+  render() {
   return (
     <div>
       <Card>
@@ -37,7 +118,7 @@ export default function Home() {
         </Text>
       </Card>
       <Card>
-        {mynet}
+        {this.state.algod} {this.state.params.firstRound}
         <h2>Donate</h2>
         <p>These projects have requested donations:</p>
 
@@ -51,27 +132,19 @@ export default function Home() {
             </tr>
           </thead>
           <tbody>
+          {this.state.txs.transactions.map((row) => (
             <tr>
-              <td>K4D...FGE</td>
-              <td>0.10 Algo</td>
-              <td>ER6...JSD</td>
-              <td>July 31 2021 12:47:17 AM +UTC</td>
-            </tr>
-            <tr>
-              <td>S3G...230</td>
-              <td>0.11 Algo</td>
-              <td>4GJ...1E1</td>
-              <td>July 31 2021 12:52:17 AM +UTC</td>
-            </tr>
-            <tr>
-              <td>8H6...C40</td>
-              <td>0.12 Algo</td>
-              <td>6H6...93J</td>
-              <td>July 31 2021 12:55:17 AM +UTC</td>
-            </tr>
+            <td>K4D...FGE</td>
+            <td>0.10 Algo</td>
+            <td>ER6...JSD</td>
+            <td>July 31 2021 12:47:17 AM +UTC</td>
+          </tr>
+
+          ))}
           </tbody>
         </Table>
       </Card>
     </div>
   );
+  }
 }
