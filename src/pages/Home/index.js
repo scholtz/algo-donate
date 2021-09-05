@@ -20,7 +20,7 @@ export default class Home extends React.Component  {
         algodToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         indexer:"https://algoexplorerapi.io/idx2",
         indexerToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        txs:{transactions:[]},
+        txs:[],
         params:{firstRound:0}
       }
       }else{
@@ -29,7 +29,7 @@ export default class Home extends React.Component  {
           algodToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           indexer:"http://localhost:8980",
           indexerToken:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          txs:{transactions:[]},
+          txs:[],
           params:{firstRound:0}
         }
       }
@@ -44,7 +44,7 @@ export default class Home extends React.Component  {
         var from = Math.max(1,params.firstRound - 100000)
         const txs = await this.searchForTransactionsWithNoteAndAmount({note:"donation/v1", amount: 800, min: from});  // it will wait here untill function a finishes
         const newState = {...this.state}
-        newState.txs = txs
+        newState.txs = this.parseTransactions(txs)
         newState.params = params
         await this.setState(newState);
         console.log("state",this.state)
@@ -58,8 +58,50 @@ export default class Home extends React.Component  {
       //this.setState({ balance: data });
     });
   };
+  parseTransactions(txs){
+    const ret = []
+    if(!txs) return []
+    if(!txs.transactions) return []
+    for(const index in txs.transactions){
+      const tx = txs.transactions[index];
+      const row = {};
+      row.id = tx.id
+      row["round-time"] = tx["round-time"]
+      const search = "donation/v1:j";
+      let note = "";
+      if (this.isBase64(tx.note)) {
+        note = atob(tx.note, 'base64');
+      }
+      console.log("note",note);
+      if (!note.startsWith(search)) {
+        continue;
+      }
+      note = note.replace(search, "");
 
-  async getTransactionParams() {
+      let noteJson = {};
+      try {
+        noteJson = JSON.parse(note);
+        row.note = noteJson
+      } catch (e) {
+        console.log("error parsing", tx);
+        continue;
+      }
+      ret.push(row)
+}
+  return ret;
+  }
+  isBase64(str) {
+    if (!str) return false;
+    if (str.trim() === "") {
+      return false;
+    }
+    try {
+      return btoa(atob(str)) == str;
+    } catch (err) {
+      return false;
+    }
+  }
+async getTransactionParams() {
     try {
       const url = new URL(this.state.algod);
       let algodclient = new algosdk.Algodv2(
@@ -132,12 +174,12 @@ export default class Home extends React.Component  {
             </tr>
           </thead>
           <tbody>
-          {this.state.txs.transactions.map((row) => (
+          {this.state.txs.map((row) => (
             <tr>
-            <td>K4D...FGE</td>
+            <td>{row["id"]}</td>
             <td>0.10 Algo</td>
             <td>ER6...JSD</td>
-            <td>July 31 2021 12:47:17 AM +UTC</td>
+            <td>{row["round-time"]}</td>
           </tr>
 
           ))}
