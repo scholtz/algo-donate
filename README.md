@@ -2,6 +2,10 @@
 
 Created as demo for bounty: https://gitcoin.co/issue/algorandfoundation/grow-algorand/85/100026193
 
+## Live
+
+This project is live on MainNet: https://algo-donate.vercel.app/
+
 ## Feedback for Pipeline-ui component
 
 I have used following components: Card, Heading, Text, Table, Loader, Button, QR, Input, Textarea, Box, Select
